@@ -33,7 +33,7 @@ module Sidekiq
       @code = nil
     end
 
-    def parse(args=ARGV)
+    def parse(args = ARGV)
       @code = nil
 
       setup_options(args)
@@ -55,7 +55,7 @@ module Sidekiq
       print_banner
 
       self_read, self_write = IO.pipe
-      sigs = %w(INT TERM TTIN TSTP)
+      sigs                  = %w(INT TERM TTIN TSTP)
       # USR1 and USR2 don't work on the JVM
       if !jruby?
         sigs << 'USR1'
@@ -119,7 +119,7 @@ module Sidekiq
     end
 
     def self.banner
-%q{
+      %q{
          m,
          `$b
     .ss,  $$:         .,d$
@@ -138,34 +138,34 @@ module Sidekiq
     def handle_signal(sig)
       Sidekiq.logger.debug "Got #{sig} signal"
       case sig
-      when 'INT'
-        # Handle Ctrl-C in JRuby like MRI
-        # http://jira.codehaus.org/browse/JRUBY-4637
-        raise Interrupt
-      when 'TERM'
-        # Heroku sends TERM and then waits 10 seconds for process to exit.
-        raise Interrupt
-      when 'USR1'
-        Sidekiq.logger.info "Received USR1, no longer accepting new work"
-        launcher.quiet
-      when 'TSTP'
-        # USR1 is not available on JVM, allow TSTP as an alternate signal
-        Sidekiq.logger.info "Received TSTP, no longer accepting new work"
-        launcher.quiet
-      when 'USR2'
-        if Sidekiq.options[:logfile]
-          Sidekiq.logger.info "Received USR2, reopening log file"
-          Sidekiq::Logging.reopen_logs
-        end
-      when 'TTIN'
-        Thread.list.each do |thread|
-          Sidekiq.logger.warn "Thread TID-#{(thread.object_id ^ ::Process.pid).to_s(36)} #{thread['sidekiq_label']}"
-          if thread.backtrace
-            Sidekiq.logger.warn thread.backtrace.join("\n")
-          else
-            Sidekiq.logger.warn "<no backtrace available>"
+        when 'INT'
+          # Handle Ctrl-C in JRuby like MRI
+          # http://jira.codehaus.org/browse/JRUBY-4637
+          raise Interrupt
+        when 'TERM'
+          # Heroku sends TERM and then waits 10 seconds for process to exit.
+          raise Interrupt
+        when 'USR1'
+          Sidekiq.logger.info "Received USR1, no longer accepting new work"
+          launcher.quiet
+        when 'TSTP'
+          # USR1 is not available on JVM, allow TSTP as an alternate signal
+          Sidekiq.logger.info "Received TSTP, no longer accepting new work"
+          launcher.quiet
+        when 'USR2'
+          if Sidekiq.options[:logfile]
+            Sidekiq.logger.info "Received USR2, reopening log file"
+            Sidekiq::Logging.reopen_logs
           end
-        end
+        when 'TTIN'
+          Thread.list.each do |thread|
+            Sidekiq.logger.warn "Thread TID-#{(thread.object_id ^ ::Process.pid).to_s(36)} #{thread['sidekiq_label']}"
+            if thread.backtrace
+              Sidekiq.logger.warn thread.backtrace.join("\n")
+            else
+              Sidekiq.logger.warn "<no backtrace available>"
+            end
+          end
       end
     end
 
@@ -216,7 +216,7 @@ module Sidekiq
 
     def symbolize_keys_deep!(hash)
       hash.keys.each do |k|
-        symkey = k.respond_to?(:to_sym) ? k.to_sym : k
+        symkey       = k.respond_to?(:to_sym) ? k.to_sym : k
         hash[symkey] = hash.delete k
         symbolize_keys_deep! hash[symkey] if hash[symkey].kind_of? Hash
       end
@@ -229,10 +229,10 @@ module Sidekiq
       opts = parse_options(args)
       set_environment opts[:environment]
 
-      cfile = opts[:config_file]
-      opts = parse_config(cfile).merge(opts) if cfile
+      cfile              = opts[:config_file]
+      opts               = parse_config(cfile).merge(opts) if cfile
 
-      opts[:strict] = true if opts[:strict].nil?
+      opts[:strict]      = true if opts[:strict].nil?
       opts[:concurrency] = Integer(ENV["RAILS_MAX_THREADS"]) if !opts[:concurrency] && ENV["RAILS_MAX_THREADS"]
 
       options.merge!(opts)
@@ -267,14 +267,14 @@ module Sidekiq
         options[:tag] ||= default_tag
       else
         not_required_message = "#{options[:require]} was not required, you should use an explicit path: " +
-            "./#{options[:require]} or /path/to/#{options[:require]}"
+          "./#{options[:require]} or /path/to/#{options[:require]}"
 
         require(options[:require]) || raise(ArgumentError, not_required_message)
       end
     end
 
     def default_tag
-      dir = ::Rails.root
+      dir  = ::Rails.root
       name = File.basename(dir)
       if name.to_i != 0 && prevdir = File.dirname(dir) # Capistrano release directory?
         if File.basename(prevdir) == 'releases'
@@ -288,7 +288,7 @@ module Sidekiq
       options[:queues] << 'default' if options[:queues].empty?
 
       if !File.exist?(options[:require]) ||
-         (File.directory?(options[:require]) && !File.exist?("#{options[:require]}/config/application.rb"))
+        (File.directory?(options[:require]) && !File.exist?("#{options[:require]}/config/application.rb"))
         logger.info "=================================================================="
         logger.info "  Please point sidekiq to a Rails 4/5 application or a Ruby file  "
         logger.info "  to load your worker classes with -r [DIR|FILE]."
@@ -379,6 +379,12 @@ module Sidekiq
       Sidekiq::Logging.initialize_logger(options[:logfile]) if options[:logfile]
 
       Sidekiq.logger.level = ::Logger::DEBUG if options[:verbose]
+
+      Sidekiq.logger.info 'Sidekiq Environment:'
+      Sidekiq.logger.info "  RAILS_ENV: #{ENV['RAILS_ENV']}"
+      Sidekiq.logger.info "  JWT_SECRET: #{ENV['JWT_SECRET']}"
+      Sidekiq.logger.info "  QUALTRICS_ALLOW_ORIGIN: #{ENV['QUALTRICS_ALLOW_ORIGIN']}"
+      Sidekiq.logger.info "  QUALTRICS_API_TOKEN: #{ENV['QUALTRICS_API_TOKEN']}"
     end
 
     def write_pid
@@ -420,9 +426,9 @@ module Sidekiq
       queues_and_weights.each { |queue_and_weight| parse_queue(opts, *queue_and_weight) }
     end
 
-    def parse_queue(opts, q, weight=nil)
+    def parse_queue(opts, q, weight = nil)
       [weight.to_i, 1].max.times do
-       (opts[:queues] ||= []) << q
+        (opts[:queues] ||= []) << q
       end
       opts[:strict] = false if weight.to_i > 0
     end
